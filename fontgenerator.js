@@ -80,8 +80,6 @@ TinyFontGenerator = {
     // convert from string to byte code
     for(var bt=0, e=data.length; bt<e; bt++) {
       buffer += this.asByte(data[bt].trim()); }
-    // ensure the data is long-aligned
-    while(buffer.length%4!=0) { buffer += this.chr(0); }
     // return the bytecode data
     return buffer;
   },
@@ -144,7 +142,7 @@ TinyFontGenerator = {
     if(this.OS2data!==false) { return this.OS2data; }
 
     var data = "";
-    data += " 00 04";  // The current (Jan 2012) OS/2 table version is 4
+    data += " 00 01";  // The OS/2 table version is 1 (TrueType rev 1.66)
     data += " 00 01";  // xAvgCharWidth
     data += " 00 64";  // weight class: 100 ("thin")
     data += " 00 01";  // width class: 1 ("ultra condensed")
@@ -435,6 +433,11 @@ TinyFontGenerator = {
     data += " 00 00 00 00";  // italicAngle
     data += " 00 00 00 00";  // underlinePosition
     data += " 00 00 00 00";  // underlineThickness
+    data += " 00 00 00 00";  // isFixedPitch
+    data += " 00 00 00 00";  // minMemType42
+    data += " 00 00 00 00";  // maxMemType42
+    data += " 00 00 00 00";  // minMemType1
+    data += " 00 00 00 00";  // maxMemType1
     this.POSTdata = this.convertData(data);
     return this.POSTdata;
   },
@@ -481,12 +484,15 @@ TinyFontGenerator = {
         len;                       // iteration value
     for(var i=0; i<olen; i++) {
       tablename = ordering[i];
+      // table directory should record the table's actual (not padded) length
       len = tables[tablename].length;
+      // the table data itself should be long-aligned
+      while(tables[tablename].length % 4 != 0) { tables[tablename] += this.chr(0); }
       font += tablename;
       font += this.computeChecksum(tables[tablename]);  // table checksum
       font += this.toULONG(offset);                     // offset for this table
       font += this.toULONG(len);                        // table length
-      offset += len;
+      offset += tables[tablename].length;
     }
 
     // Finally, write the actual table data blocks
